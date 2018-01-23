@@ -15,7 +15,6 @@ public class FlagManager
 	
 	public FlagManager(Connection conn)
 	{
-		//constructor fills the list of flags from a database
 		if (conn == null)
 		{
 			flags.add("No Connection Available");
@@ -23,7 +22,6 @@ public class FlagManager
 		else
 		{
 			crud = new CRUD(conn);
-			fillFlagList();
 		}
 	}
 	
@@ -64,6 +62,8 @@ public class FlagManager
 	
 	public List<String> getAllFlagsByCountry()
 	{
+		//Calling this function also refreshes the flag list
+		fillFlagList();
 		return this.flags;
 	}
 	
@@ -101,7 +101,7 @@ public class FlagManager
 					Double.parseDouble(s[5]), 	//horizontal position
 					Double.parseDouble(s[6]),	//vertical position
 					Double.parseDouble(s[4]),	//size
-					Double.parseDouble(s[7]),	//height/width ratio, in database as orientation
+					Double.parseDouble(s[7]),	//width/height ratio, in database as orientation
 					getColour(s[3]));			//colour
 		}
 	}
@@ -122,7 +122,7 @@ public class FlagManager
 						Double.parseDouble(s[5]), 	//horizontal position
 						Double.parseDouble(s[6]),	//vertical position
 						Double.parseDouble(s[4]),	//width, in database as size
-						Double.parseDouble(s[7]),	//height/width ratio, in database as orientation
+						Double.parseDouble(s[7]),	//width/height ratio, in database as orientation
 						getColour(s[3]));			//colour
 				break;
 			case "TriangleUp":
@@ -130,7 +130,7 @@ public class FlagManager
 						Double.parseDouble(s[5]), 	//horizontal position
 						Double.parseDouble(s[6]),	//vertical position
 						Double.parseDouble(s[4]),	//base, in database as size
-						Double.parseDouble(s[7]),	//height/base ratio, in database as orientation
+						Double.parseDouble(s[7]),	//base/height ratio, in database as orientation
 						getColour(s[3]));			//colour
 				break;
 			case "TriangleSide":
@@ -138,7 +138,7 @@ public class FlagManager
 						Double.parseDouble(s[5]), 	//horizontal position
 						Double.parseDouble(s[6]),	//vertical position
 						Double.parseDouble(s[4]),	//base, in database as size
-						Double.parseDouble(s[7]),	//height/base ratio, in database as orientation
+						Double.parseDouble(s[7]),	//base/height ratio, in database as orientation
 						getColour(s[3]));			//colour
 				break;
 			}

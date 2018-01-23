@@ -64,6 +64,7 @@ public class Flags extends Application
 	@Override public void start(Stage stage) 
 	{
 		flagManager = new FlagManager(DBConnection.getInstance());
+		ComboBox<String> cbbFlags = new ComboBox<String>();
 		
 		BorderPane root = new BorderPane();
 		BorderPane viewer = new BorderPane();
@@ -85,6 +86,7 @@ public class Flags extends Application
 			root.setCenter(viewer);
 			menuFlag.setDisable(true);
 			editable = false;
+			cbbFlags.getItems().addAll(flagManager.getAllFlagsByCountry());
 			});
 		menuFile.getItems().addAll(editFlag, viewFlag);
 		
@@ -111,7 +113,6 @@ public class Flags extends Application
 		miExportSettings.setOnAction(e->openExportMenu(stage));
 		menuExport.getItems().addAll(miExportSVG, miExportSettings);
 		
-		ComboBox<String> cbbFlags = new ComboBox<String>();
 		cbbFlags.getItems().addAll(flagManager.getAllFlagsByCountry());
 		cbbFlags.setEditable(true);
 		cbbFlags.setVisibleRowCount(10);
@@ -124,12 +125,14 @@ public class Flags extends Application
 
 		backgroundColorpicker = new ColorPicker();
 		backgroundColorpicker.setOnAction(e->{
-			if (flag == null) {
+			if (flag == null)
+			{
 				flag = new Flag(backgroundColorpicker.getValue());
 				placeFlag(editor, flag);
 				editable = true;
 			}
-			else {
+			else 
+			{
 				flag.setBackGround(backgroundColorpicker.getValue());
 				flag.draw();
 			}
