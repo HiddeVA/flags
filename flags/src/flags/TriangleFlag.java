@@ -39,14 +39,14 @@ public class TriangleFlag extends BlockFlag
 		flagBlocks.add(t);
 	}
 	
-	public void addSideTriangle(double xPos, double yPos, double base, double heightBaseRatio, Color clr)
+	public void addSideTriangle(double xPos, double yPos, double base, double baseHeightRatio, Color clr)
 	{
 		double vSize = Double.min(base, getHeight());
-		double hSize = vSize * heightBaseRatio;
+		double hSize = vSize / baseHeightRatio;
 		if (hSize > getWidth())
 		{
 			hSize = getWidth();
-			vSize = hSize / heightBaseRatio;
+			vSize = hSize * baseHeightRatio;
 		}
 		SideTriangle t = new SideTriangle(vSize, hSize, clr);
 		t.setCoords(xPos, yPos);
@@ -56,11 +56,11 @@ public class TriangleFlag extends BlockFlag
 	public void addTriangle(double xPos, double yPos, double base, double heightBaseRatio, Color clr)
 	{
 		double hSize = Double.min(base, getWidth());
-		double vSize = hSize * heightBaseRatio;
+		double vSize = hSize / heightBaseRatio;
 		if (vSize > getHeight())
 		{
 			vSize = getHeight();
-			hSize = vSize / heightBaseRatio;
+			hSize = vSize * heightBaseRatio;
 		}
 		Triangle t = new Triangle(hSize, vSize, clr);
 		t.setCoords(xPos, yPos);
@@ -113,9 +113,9 @@ public class TriangleFlag extends BlockFlag
 			return new String[] {
 					"TriangleSide",
 					String.valueOf(width),
+					String.valueOf(width / height),
 					String.valueOf(xPos),
 					String.valueOf(yPos),
-					String.valueOf(width / height),
 					colour.toString()};
 		}
 		

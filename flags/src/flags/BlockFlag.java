@@ -46,14 +46,14 @@ public class BlockFlag extends Flag
 		activeRectangle = r;
 	}
 	
-	public void addBlock(double xPos, double yPos, double size, double heightWidthRatio, Color clr)
+	public void addBlock(double xPos, double yPos, double size, double widthHeightRatio, Color clr)
 	{
 		double hSize = Double.min(size, this.getWidth());
-		double vSize = hSize * heightWidthRatio;
+		double vSize = hSize / widthHeightRatio;
 		if (vSize > this.getHeight())
 		{
 			vSize = this.getHeight();
-			hSize = vSize / heightWidthRatio;
+			hSize = vSize * widthHeightRatio;
 		}
 		Rectangle r = new Rectangle(hSize, vSize, clr);
 		if (xPos + hSize > this.getWidth()) xPos = this.getWidth() - hSize;
@@ -223,9 +223,9 @@ public class BlockFlag extends Flag
 			return new String[] {
 					"block",
 					String.valueOf(width),
+					String.valueOf(width / height),
 					String.valueOf(xPos),
 					String.valueOf(yPos),
-					String.valueOf(width / height),
 					colour.toString()};
 		}
 		
