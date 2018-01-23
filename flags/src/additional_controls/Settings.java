@@ -20,12 +20,20 @@ public class Settings
 	
 	public double getNumeric()
 	{
-		return storedValues.pop();
+		if (storedValues.size() > 0)
+		{
+			return storedValues.pop();
+		}
+		else return 0;
 	}
 	
 	public boolean getOption()
 	{
-		return storedOptions.pop();
+		if (storedOptions.size() > 0)
+		{
+			return storedOptions.pop();
+		}
+		else return false;
 	}
 	
 	public void add(double...values)
