@@ -77,7 +77,7 @@ public class CRUD
 		}
 		List<String> result = new ArrayList<>();
 		String query = buildStatement(tablenames, field) + " " + (clause != null ? clause : "");
-		try 
+		try
 		{
 			Statement stmt = connection.createStatement();
 			stmt.execute(query);

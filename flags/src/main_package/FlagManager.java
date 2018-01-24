@@ -5,13 +5,27 @@ import java.io.File;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import javafx.scene.paint.Color;
 
 public class FlagManager
 {
 	private List<String> flags = new ArrayList<String>();
 	CRUD crud;
+	
+	private static Map<String, Integer> dbColumnLabels = new HashMap<>();
+	static {
+	dbColumnLabels.put("symboltype", 2);
+	dbColumnLabels.put("colour", 3);
+	dbColumnLabels.put("size", 4);
+	dbColumnLabels.put("xpos", 5);
+	dbColumnLabels.put("ypos", 6);
+	dbColumnLabels.put("orientation", 7);
+	dbColumnLabels.put("whratio", 7);
+	}
 	
 	public FlagManager(Connection conn)
 	{
@@ -75,14 +89,12 @@ public class FlagManager
 		
 		for (String[] s : symboldata)
 		{
-			//TODO: poorly written code. Needs a more descriptive way
-			//The database columns don't line up with the method call. This may require a lot of effort actually.........
-			flag.addSymbol(getSymbol(s[2]), 	//symboltype
-					getColour(s[3]), 			//colour
-					Double.parseDouble(s[5]),	//horizontal position (xpos)
-					Double.parseDouble(s[6]), 	//vertical position (ypos)
-					Double.parseDouble(s[4]), 	//size
-					Double.parseDouble(s[7]));	//orientation
+			flag.addSymbol(getSymbol(s[dbColumnLabels.get("symboltype")]),
+					getColour(s[dbColumnLabels.get("colour")]),
+					Double.parseDouble(s[dbColumnLabels.get("xpos")]),
+					Double.parseDouble(s[dbColumnLabels.get("ypos")]),
+					Double.parseDouble(s[dbColumnLabels.get("size")]),
+					Double.parseDouble(s[dbColumnLabels.get("orientation")]));
 		}
 	}
 	
@@ -95,14 +107,12 @@ public class FlagManager
 		
 		for (String[] s : flagBlockData)
 		{
-			//TODO: poorly written code. Needs a more descriptive way
-			//The columns don't line up nicely, so the column-count is off and seemingly random
 			flag.addBlock(
-					Double.parseDouble(s[5]), 	//horizontal position
-					Double.parseDouble(s[6]),	//vertical position
-					Double.parseDouble(s[4]),	//size
-					Double.parseDouble(s[7]),	//width/height ratio, in database as orientation
-					getColour(s[3]));			//colour
+					Double.parseDouble(s[dbColumnLabels.get("xpos")]),
+					Double.parseDouble(s[dbColumnLabels.get("ypos")]),
+					Double.parseDouble(s[dbColumnLabels.get("size")]),
+					Double.parseDouble(s[dbColumnLabels.get("whratio")]),
+					getColour(s[dbColumnLabels.get("colour")]));
 		}
 	}
 	
@@ -145,7 +155,7 @@ public class FlagManager
 		}
 	}
 	
-	private Color getColour(String colourcode)
+	static Color getColour(String colourcode)
 	{
 		if (colourcode == null) return null;
 		switch (colourcode)

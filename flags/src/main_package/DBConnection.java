@@ -58,8 +58,8 @@ public class DBConnection
 		{
 			Class.forName("com.mysql.jdbc.Driver");
 			String url = "jdbc:mysql://" + servername + "/flags";
-			String user = "root";
-			String pw = "";
+			String user = "flagmanager";
+			String pw =	"VY2Zx4660whjkJcq";
 			conn = DriverManager.getConnection(url, user, pw);
 		}
 		catch (SQLException e)

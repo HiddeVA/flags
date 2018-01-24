@@ -2,7 +2,6 @@ package main_package;
 
 import additional_controls.*;
 import flags.*;
-
 import java.io.File;
 import java.sql.Connection;
 import java.util.Arrays;
@@ -15,16 +14,19 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.stage.*;
+import javafx.stage.Stage;
+import javafx.stage.Modality;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 
-///////////////////////////////
+////////////////////////////////////
 // Table of Contents
-///////////////////////////////
-// 31	Initialisers / settings variables
-// 63	Application start
-// 173	Application helper functions
-// 220	Submenus
-////////////////////////////////
+////////////////////////////////////
+// Initialisers / settings variables
+// Application start
+// Application helper functions
+// Submenus
+////////////////////////////////////
 
 public class Flags extends Application
 {
@@ -93,10 +95,12 @@ public class Flags extends Application
 		MenuItem loadFlag = new MenuItem("Load Flag");
 		MenuItem saveFlag = new MenuItem("Save Flag");
 		MenuItem newFlag = new MenuItem("New Flag");
-		menuFlag.getItems().addAll(newFlag, loadFlag, saveFlag);
+		MenuItem importFlag = new MenuItem("Import");
+		menuFlag.getItems().addAll(newFlag, loadFlag, saveFlag, importFlag);
 		newFlag.setOnAction(e->openCreateNewFlagMenu(stage, editor));
 		loadFlag.setOnAction(e->openLoadFlagMenu(stage, editor));
 		saveFlag.setOnAction(e->openSaveFlagMenu(stage));
+		importFlag.setOnAction(e->openImportFlagMenu(stage, editor));
 		
 		MenuItem miConnect = new MenuItem("Connection Info");
 		miConnect.setOnAction(e->openConnectMenu(stage));
@@ -223,6 +227,159 @@ public class Flags extends Application
 		return subMenu;
 	}
 	
+	private void openAddBlockMenu(Stage onStage)
+	{
+		Stage addBlockMenu = createSubMenu(onStage);
+		
+		boolean useSettings = settings.getId().equals("addblock");
+		
+		NumberTextField txtWidth = new NumberTextField(useSettings ? settings.getNumeric() : flag.getWidth() / 2);
+		NumberTextField txtHeight = new NumberTextField(useSettings ? settings.getNumeric() : flag.getHeight() / 2);
+		CheckBox chkPercentage = new CheckBox();
+		chkPercentage.setSelected(useSettings ? settings.getOption() : false);
+		
+		ChoiceBox<Pos> chbPosition = new ChoiceBox<Pos>();
+		chbPosition.getItems().addAll(Pos.TOP_LEFT, Pos.TOP_RIGHT, Pos.BOTTOM_LEFT, Pos.BOTTOM_RIGHT, Pos.CENTER);
+		chbPosition.setValue(Pos.TOP_LEFT);
+		
+		RadioGroup rgBlockShape = new RadioGroup(new RadioButton("Rectangle"), new RadioButton("Triangle"));
+		
+		Button btnAddBlock = new Button("Add Block");
+		btnAddBlock.setOnAction(e->{
+			double width = txtWidth.getNumericText();
+			double height = txtHeight.getNumericText();
+			width = chkPercentage.isSelected() ? flag.getWidth() * width / 100 : Double.min(flag.getWidth(), width);
+			height = chkPercentage.isSelected() ? flag.getHeight() * height / 100 : Double.min(flag.getHeight(), height);
+			
+			switch (rgBlockShape.getSelectedToggle())
+			{
+			case "Rectangle": default:
+				((BlockFlag)flag).addBlock(width, height, chbPosition.getValue(), symbolColorpicker.getValue());
+				break;
+			case "Triangle":
+				((TriangleFlag)flag).addTriangle(width, height, chbPosition.getValue(), symbolColorpicker.getValue());
+				break;
+			}
+			
+			flag.draw();
+			flag.setColorPicker(symbolColorpicker);
+			settings = new Settings("addblock");
+			settings.add(txtHeight.getNumericText(), txtWidth.getNumericText());
+			settings.add(chkPercentage.isSelected());
+			addBlockMenu.close();
+		});
+				
+		VBox options = new VBox(
+				new Label("Add a Rectangular Section"),
+				new HBox(new Label("Width: "), txtWidth),
+				new HBox(new Label("Height: "), txtHeight),
+				new HBox(new Label("Percentage? "), chkPercentage),
+				new HBox(new Label("Position: "), chbPosition),
+				flag instanceof TriangleFlag ? new HBox(new Label("Type of Block: "), rgBlockShape) : new HBox(),
+				btnAddBlock);
+		options.setSpacing(10);
+		options.setAlignment(Pos.CENTER);
+		
+		addBlockMenu.setScene(new Scene(options, 200, 300));
+		addBlockMenu.show();
+	}
+	
+	private void openAddSymbolMenu(Stage onStage)
+	{
+		Stage addSymbolMenu = createSubMenu(onStage);
+		
+		boolean useSettings = settings.getId().equals("addsymbol");
+		
+		ComboBox<SymbolType> cbxType = new ComboBox<>();
+		cbxType.getItems().addAll(SymbolType.CIRCLE, SymbolType.STAR, SymbolType.CRESCENT);
+		cbxType.setValue(SymbolType.CIRCLE);
+		
+		NumberTextField txtSize = new NumberTextField(useSettings ? settings.getNumeric() : 20);
+		NumberTextField txtXPos = new NumberTextField(useSettings ? settings.getNumeric() : flag.getWidth() / 2);
+		NumberTextField txtYPos = new NumberTextField(useSettings ? settings.getNumeric() : flag.getHeight() / 2);
+		txtXPos.setPrefWidth(50);
+		txtYPos.setPrefWidth(50);
+		CheckBox chkPercentage = new CheckBox();
+		
+		Button btnConfirm = new Button("Add Symbol");
+		btnConfirm.setOnAction(e->{
+			//These lines perform various checks to stop the user from adding oversized objects
+			double size = txtSize.getNumericText();
+			double maxSize = Double.min(flag.getWidth(), flag.getHeight());
+			size = Double.min(size, maxSize);
+			
+			double x = txtXPos.getNumericText();
+			x = chkPercentage.isSelected() ? x * flag.getWidth() / 100 : x;
+			double xMax = flag.getWidth() - size / 2;
+			
+			double y = txtYPos.getNumericText();
+			y = chkPercentage.isSelected() ? y * flag.getHeight() / 100 : y;
+			double yMax = flag.getHeight() - size / 2;
+			
+			y = Double.max(size / 2, Double.min(y, yMax)); //There are 4 checks that need to be made, 2 for x, 2 for y
+			x = Double.max(size / 2, Double.min(x, xMax)); //Max for lower bounds, min for upper bounds
+			
+			flag.addSymbol(cbxType.getValue(), symbolColorpicker.getValue(), x, y, size, 0);
+			flag.setColorPicker(symbolColorpicker);
+			settings = new Settings("addsymbol");
+			settings.add(y, x, size);
+			settings.add(chkPercentage.isSelected());
+			addSymbolMenu.close();
+		});
+		
+		VBox options = new VBox(
+				new Label("Add a symbol"), 
+				new HBox(new Label("Type: "), cbxType), 
+				new HBox(new Label("Size: "), txtSize),
+				new HBox(new Label("Percentage? "), chkPercentage),
+				new HBox(new Label("Horizontal :"), txtXPos),
+				new HBox(new Label("Vertical :"), txtYPos),
+				btnConfirm);
+		options.setSpacing(10);
+		options.setAlignment(Pos.CENTER);
+		
+		addSymbolMenu.setScene(new Scene(options, 200, 300));
+		addSymbolMenu.show();
+	}
+	
+	private void openConnectMenu(Stage onStage)
+	{
+		Stage connectMenu = createSubMenu(onStage);
+		
+		Label lblConnectInfo = new Label();
+		Button btnReconnect = new Button("Reconnect");
+		VBox container = new VBox(lblConnectInfo, btnReconnect);
+		if (DBConnection.isConnnected())
+		{
+			lblConnectInfo.setText("Currently connected to: " + DBConnection.getServerInfo()[0]);
+			btnReconnect.setVisible(false);
+		}
+		else
+		{
+			lblConnectInfo.setText("Not connected to database");			
+			btnReconnect.setOnAction(e->{
+				Connection newConnection = DBConnection.getInstance();
+				if (newConnection != null)
+				{
+					flagManager = new FlagManager(newConnection);
+					Alert reconnectSuccess = new Alert(AlertType.INFORMATION);
+					reconnectSuccess.setContentText("Reconnect successful");
+					reconnectSuccess.showAndWait();
+					lblConnectInfo.setText("Currently connected to: " + DBConnection.getServerInfo()[0]);
+					btnReconnect.setVisible(false);
+				}
+				else
+				{
+					Alert reconnectFailed = new Alert(AlertType.ERROR);
+					reconnectFailed.setContentText("Failed to reconnect");
+					reconnectFailed.showAndWait();
+				}
+			});
+		}
+		connectMenu.setScene(new Scene(container, 250, 150));
+		connectMenu.show();
+	}
+	
 	private void openCreateNewFlagMenu(Stage onStage, BorderPane editor)
 	{
 		Stage createNewFlag = createSubMenu(onStage);
@@ -283,6 +440,74 @@ public class Flags extends Application
 		createNewFlag.show();
 	}
 	
+	private void openEditSettingsMenu(Stage onStage)
+	{
+		Stage editSettingsMenu = createSubMenu(onStage);
+		
+		CheckBox chkSnap = new CheckBox("Snap to Position");
+		chkSnap.setSelected(snapToPosition);
+		chkSnap.setOnAction(e->snapToPosition = !snapToPosition);
+		
+		editSettingsMenu.setScene(new Scene(new VBox(chkSnap), 150, 150));
+		editSettingsMenu.show();
+	}
+	
+	private void openExportMenu(Stage onStage)
+	{
+		Stage exportMenu = createSubMenu(onStage);
+		
+		Button btnOpenDialog = new Button("Select Directory");		
+		FileChooser exportFileChooser = new FileChooser();
+		Label lblCurrentDirectory = new Label("Current Directory: " + Exporter.getDirectory());
+		lblCurrentDirectory.setWrapText(true);
+		btnOpenDialog.setOnAction(e->{
+			File file = exportFileChooser.showOpenDialog(exportMenu);
+			exportFileChooser.setInitialDirectory(new File(Exporter.getDirectory()));
+			if (file != null)
+			{
+				Exporter.setExportDestination(file);
+				lblCurrentDirectory.setText(Exporter.getDirectory());
+			}
+		});
+		VBox container = new VBox(lblCurrentDirectory, btnOpenDialog);
+		container.setSpacing(10);
+		exportMenu.setScene(new Scene(container, 250, 150));		
+		exportMenu.show();
+	}
+	
+	private void openImportFlagMenu(Stage onStage, BorderPane b)
+	{
+		Stage importFlagMenu = createSubMenu(onStage);
+		
+		Label lblSelectedFile = new Label();
+		Button btnImportFlag = new Button("Start Import");
+		btnImportFlag.setDisable(true);
+		Button btnOpenFile = new Button("Select File");
+		
+		btnOpenFile.setOnAction(e->{
+			FileChooser fc = new FileChooser();
+			fc.setInitialDirectory(new File("C:\\Users\\Public"));
+			fc.getExtensionFilters().addAll(new ExtensionFilter("Vector Graphics (*.svg)", "*.svg"), new ExtensionFilter("XML files (*.xml)","*.xml"));
+			File importFile = fc.showOpenDialog(importFlagMenu);
+			if (importFile != null)
+			{
+				btnImportFlag.setDisable(false);
+				lblSelectedFile.setText(importFile.getPath());
+				Importer.setImportFile(importFile);
+			}
+		});
+		btnImportFlag.setOnAction(e->{
+			placeFlag(b, Importer.beginImport());
+			importFlagMenu.close();
+		});
+		
+		
+		VBox container = new VBox(new Label("Select a File to Import"), btnOpenFile, lblSelectedFile, btnImportFlag);
+		container.setSpacing(10);
+		importFlagMenu.setScene(new Scene(container, 250, 250));
+		importFlagMenu.show();
+	}
+	
 	private void openLoadFlagMenu(Stage onStage, BorderPane editor)
 	{
 		Stage loadFlagMenu = createSubMenu(onStage);
@@ -338,193 +563,5 @@ public class Flags extends Application
 		
 		saveFlagMenu.setScene(new Scene(container, 200, 250));
 		saveFlagMenu.show();
-	}
-	
-	private void openAddSymbolMenu(Stage onStage)
-	{
-		Stage addSymbolMenu = createSubMenu(onStage);
-		
-		boolean useSettings = settings.getId().equals("addsymbol");
-		
-		ComboBox<SymbolType> cbxType = new ComboBox<>();
-		cbxType.getItems().addAll(SymbolType.CIRCLE, SymbolType.STAR, SymbolType.CRESCENT);
-		cbxType.setValue(SymbolType.CIRCLE);
-		
-		NumberTextField txtSize = new NumberTextField(useSettings ? settings.getNumeric() : 20);
-		NumberTextField txtXPos = new NumberTextField(useSettings ? settings.getNumeric() : flag.getWidth() / 2);
-		NumberTextField txtYPos = new NumberTextField(useSettings ? settings.getNumeric() : flag.getHeight() / 2);
-		txtXPos.setPrefWidth(50);
-		txtYPos.setPrefWidth(50);
-		CheckBox chkPercentage = new CheckBox();
-		
-		Button btnConfirm = new Button("Add Symbol");
-		btnConfirm.setOnAction(e->{
-			//These lines perform various checks to stop the user from adding oversized objects
-			double size = txtSize.getNumericText();
-			double maxSize = Double.min(flag.getWidth(), flag.getHeight());
-			size = Double.min(size, maxSize);
-			
-			double x = txtXPos.getNumericText();
-			x = chkPercentage.isSelected() ? x * flag.getWidth() / 100 : x;
-			double xMax = flag.getWidth() - size / 2;
-			
-			double y = txtYPos.getNumericText();
-			y = chkPercentage.isSelected() ? y * flag.getHeight() / 100 : y;
-			double yMax = flag.getHeight() - size / 2;
-			
-			y = Double.max(size / 2, Double.min(y, yMax)); //There are 4 checks that need to be made, 2 for x, 2 for y
-			x = Double.max(size / 2, Double.min(x, xMax)); //Max for lower bounds, min for upper bounds
-			
-			flag.addSymbol(cbxType.getValue(), symbolColorpicker.getValue(), x, y, size, 0);
-			flag.setColorPicker(symbolColorpicker);
-			settings = new Settings("addsymbol");
-			settings.add(y, x, size);
-			settings.add(chkPercentage.isSelected());
-			addSymbolMenu.close();
-		});
-		
-		VBox options = new VBox(
-				new Label("Add a symbol"), 
-				new HBox(new Label("Type: "), cbxType), 
-				new HBox(new Label("Size: "), txtSize),
-				new HBox(new Label("Percentage? "), chkPercentage),
-				new HBox(new Label("Horizontal :"), txtXPos),
-				new HBox(new Label("Vertical :"), txtYPos),
-				btnConfirm);
-		options.setSpacing(10);
-		options.setAlignment(Pos.CENTER);
-		
-		addSymbolMenu.setScene(new Scene(options, 200, 300));
-		addSymbolMenu.show();
-	}	
-	
-	private void openAddBlockMenu(Stage onStage)
-	{
-		Stage addBlockMenu = createSubMenu(onStage);
-		
-		boolean useSettings = settings.getId().equals("addblock");
-		
-		NumberTextField txtWidth = new NumberTextField(useSettings ? settings.getNumeric() : flag.getWidth() / 2);
-		NumberTextField txtHeight = new NumberTextField(useSettings ? settings.getNumeric() : flag.getHeight() / 2);
-		CheckBox chkPercentage = new CheckBox();
-		chkPercentage.setSelected(useSettings ? settings.getOption() : false);
-		
-		ChoiceBox<Pos> chbPosition = new ChoiceBox<Pos>();
-		chbPosition.getItems().addAll(Pos.TOP_LEFT, Pos.TOP_RIGHT, Pos.BOTTOM_LEFT, Pos.BOTTOM_RIGHT, Pos.CENTER);
-		chbPosition.setValue(Pos.TOP_LEFT);
-		
-		RadioGroup rgBlockShape = new RadioGroup(new RadioButton("Rectangle"), new RadioButton("Triangle"));
-		
-		Button btnAddBlock = new Button("Add Block");
-		btnAddBlock.setOnAction(e->{
-			double width = txtWidth.getNumericText();
-			double height = txtHeight.getNumericText();
-			width = chkPercentage.isSelected() ? flag.getWidth() * width / 100 : Double.min(flag.getWidth(), width);
-			height = chkPercentage.isSelected() ? flag.getHeight() * height / 100 : Double.min(flag.getHeight(), height);
-			
-			switch (rgBlockShape.getSelectedToggle())
-			{
-			case "Rectangle": default:
-				((BlockFlag)flag).addBlock(width, height, chbPosition.getValue(), symbolColorpicker.getValue());
-				break;
-			case "Triangle":
-				((TriangleFlag)flag).addTriangle(width, height, chbPosition.getValue(), symbolColorpicker.getValue());
-				break;
-			}
-			
-			flag.draw();
-			flag.setColorPicker(symbolColorpicker);
-			settings = new Settings("addblock");
-			settings.add(txtHeight.getNumericText(), txtWidth.getNumericText());
-			settings.add(chkPercentage.isSelected());
-			addBlockMenu.close();
-		});
-				
-		VBox options = new VBox(
-				new Label("Add a Rectangular Section"),
-				new HBox(new Label("Width: "), txtWidth),
-				new HBox(new Label("Height: "), txtHeight),
-				new HBox(new Label("Percentage? "), chkPercentage),
-				new HBox(new Label("Position: "), chbPosition),
-				flag instanceof TriangleFlag ? new HBox(new Label("Type of Block: "), rgBlockShape) : new HBox(),
-				btnAddBlock);
-		options.setSpacing(10);
-		options.setAlignment(Pos.CENTER);
-		
-		addBlockMenu.setScene(new Scene(options, 200, 300));
-		addBlockMenu.show();
-	}
-	
-	private void openConnectMenu(Stage onStage)
-	{
-		Stage connectMenu = createSubMenu(onStage);
-		
-		Label lblConnectInfo = new Label();
-		Button btnReconnect = new Button("Reconnect");
-		VBox container = new VBox(lblConnectInfo, btnReconnect);
-		if (DBConnection.isConnnected())
-		{
-			lblConnectInfo.setText("Currently connected to: " + DBConnection.getServerInfo()[0]);
-			btnReconnect.setVisible(false);
-		}
-		else
-		{
-			lblConnectInfo.setText("Not connected to database");			
-			btnReconnect.setOnAction(e->{
-				Connection newConnection = DBConnection.getInstance();
-				if (newConnection != null)
-				{
-					flagManager = new FlagManager(newConnection);
-					Alert reconnectSuccess = new Alert(AlertType.INFORMATION);
-					reconnectSuccess.setContentText("Reconnect successful");
-					reconnectSuccess.showAndWait();
-					lblConnectInfo.setText("Currently connected to: " + DBConnection.getServerInfo()[0]);
-					btnReconnect.setVisible(false);
-				}
-				else
-				{
-					Alert reconnectFailed = new Alert(AlertType.ERROR);
-					reconnectFailed.setContentText("Failed to reconnect");
-					reconnectFailed.showAndWait();
-				}
-			});
-		}
-		connectMenu.setScene(new Scene(container, 250, 150));
-		connectMenu.show();
-	}
-	
-	private void openExportMenu(Stage onStage)
-	{
-		Stage exportMenu = createSubMenu(onStage);
-		
-		Button btnOpenDialog = new Button("Select Directory");		
-		FileChooser exportFileChooser = new FileChooser();
-		Label lblCurrentDirectory = new Label("Current Directory: " + Exporter.getDirectory());
-		lblCurrentDirectory.setWrapText(true);
-		btnOpenDialog.setOnAction(e->{
-			File file = exportFileChooser.showOpenDialog(exportMenu);
-			exportFileChooser.setInitialDirectory(new File(Exporter.getDirectory()));
-			if (file != null)
-			{
-				Exporter.setExportDestination(file);
-				lblCurrentDirectory.setText(Exporter.getDirectory());
-			}
-		});
-		VBox container = new VBox(lblCurrentDirectory, btnOpenDialog);
-		container.setSpacing(10);
-		exportMenu.setScene(new Scene(container, 250, 150));		
-		exportMenu.show();
-	}
-	
-	private void openEditSettingsMenu(Stage onStage)
-	{
-		Stage editSettingsMenu = createSubMenu(onStage);
-		
-		CheckBox chkSnap = new CheckBox("Snap to Position");
-		chkSnap.setSelected(snapToPosition);
-		chkSnap.setOnAction(e->snapToPosition = !snapToPosition);
-		
-		editSettingsMenu.setScene(new Scene(new VBox(chkSnap), 150, 150));
-		editSettingsMenu.show();
 	}
 }
