@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS `flag` (
 
 --
 -- Dumping data for table `flag`
+-- If background is empty or NULL, it means the background is white
 --
 
 INSERT INTO `flag` (`id`, `country_id`, `background`, `flagstyle`) VALUES
@@ -121,6 +122,9 @@ CREATE TABLE IF NOT EXISTS `flagcolours` (
 
 --
 -- Dumping data for table `flagcolours`
+-- Some flags need an extra parameter, for example the orientation of diagonal lines on a flag.
+-- If colour_order is 0, it indicates that this is not a colour, but an extra parameter
+-- The value of this parameter is stored in colour_code
 --
 
 INSERT INTO `flagcolours` (`flag_id`, `colour_code`, `colour_order`, `row_width`) VALUES
@@ -191,6 +195,10 @@ CREATE TABLE IF NOT EXISTS `flagsymbol` (
 
 --
 -- Dumping data for table `flagsymbol`
+-- All types of flag-objects are put in this table
+-- The orientation column is used to hold extra parameters
+-- For stars and crescents, it indicates how they are rotated
+-- For blocks and triangles it is the ratio between the width and height
 --
 
 INSERT INTO `flagsymbol` (`id`, `flag_id`, `symboltype`, `colour`, `size`, `xPosition`, `yPosition`, `orientation`, `view_order`) VALUES
